@@ -25,4 +25,5 @@ public class FreeHoursTools
         var list = await _ctx.FreeHours.ToListAsync();
         return list;
     }
+    
 }
