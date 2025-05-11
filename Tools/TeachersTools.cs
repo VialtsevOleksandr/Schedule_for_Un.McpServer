@@ -57,9 +57,9 @@ public class TeachersTools
     [McpServerTool, Description(
     "Finds teachers who are available (i.e., have free time slots) based on optional filtering parameters. " +
     "Use this tool when the user wants to know which teachers are free, free during a specific day of the week (1 = Monday … 5 = Friday) and/or a specific pair (lesson period). " +
-    "Parameters:\n" +
-    "- day (int): Day of the week. Use 0 to ignore the day filter.\n" +
-    "- pair (int): Lesson number (e.g., 1st pair, 2nd pair). Use 0 to ignore the pair filter.\n" +
+    "Parameters:" +
+    "- day (int): Day of the week. Use 0 to ignore the day filter." +
+    "- pair (int): Lesson number (e.g., 1st pair, 2nd pair). Use 0 to ignore the pair filter." +
     "The tool returns teachers who have at least one matching free hour. Internally, it performs a filtered query over teacher free hour slots."
     )]
     public async Task<IEnumerable<Teacher>> GetAvailableTeachers(int day = 0, int pair = 0)
@@ -97,8 +97,8 @@ public class TeachersTools
     [McpServerTool, Description(
     "Finds all available (free) time slots for a specific teacher, based on their full name or surname. " +
     "Use this tool when a user asks something like 'When is Professor Shevchenko free?' or 'Show free hours for teacher Ivanenko'. " +
-    "Parameter:\n" +
-    "- teacherName (string): The full name or part of the name/surname of the teacher.\n" +
+    "Parameter:" +
+    "- teacherName (string): The full name or part of the name/surname of the teacher." +
     "If no teachers are found, or multiple teachers match the name, the tool returns a message with suggestions. " +
     "If exactly one teacher is found, their free hours are returned grouped by day of the week, including day names and lesson numbers. " +
     "Handles edge cases: empty input, no match, or multiple matches."
@@ -167,8 +167,8 @@ public class TeachersTools
 
     [McpServerTool, Description(
     "Searches for teachers by full name or surname. Use this when a user provides a name fragment and wants to determine all teacher information or select relevant teachers. " +
-    "Parameter:\n" +
-    "- teacherName (string): Part or full teacher name.\n" +
+    "Parameter:" +
+    "- teacherName (string): Part or full teacher name." +
     "Returns a list of all teachers whose name contains the entered value, case insensitive. " +
     "Does not filter based on availability. This tool is useful for name recognition or pre-screening."
     )]
@@ -295,8 +295,8 @@ public class TeachersTools
     - Updated Teacher object and a descriptive message of what was changed or prevented.")]
     public async Task<object> UpdateTeacher(
         [Description("Exact full name of the teacher to update")] string currentFullName,
-        [Description("Optional new full name, pass an empty string: `` if the user has not specified it explicitly")] string? newFullName = null,
-        [Description("Optional new position (Асистент, Доцент, Професор), pass an empty string: `` if the user has not specified it explicitly")] string? newPosition = null,
+        [Description("Optional new full name, pass an empty string: `` if the user has not specified it explicitly")] string newFullName = "",
+        [Description("Optional new position (Асистент, Доцент, Професор), pass an empty string: `` if the user has not specified it explicitly")] string newPosition = "",
         [Description("FreeHours to add (optional), pass an empty list: `[]` if the user has not specified it explicitly")] List<FreeHourModel>? freeHoursToAdd = default,
         [Description("FreeHours to be deleted (optional), pass an empty list: `[]` if the user has not specified it explicitly")] List<FreeHourModel>? freeHoursToRemove = default)
     {

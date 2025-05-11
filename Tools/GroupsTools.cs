@@ -54,14 +54,16 @@ public class GroupsTools
     }
 
 
-    [McpServerTool, Description("Знайти всі групи")]
+    [McpServerTool, Description(
+        "Fetches all groups in the database." +
+        "No input parameters required." +
+        "Returns an IEnumerable<Group> with every registered group.")]
     public async Task<IEnumerable<Group>> GetAllGroups()
     {
-        var list = await _ctx.Groups.ToListAsync();
-        return list;
+        return await _ctx.Groups.ToListAsync();
     }
 
-    [McpServerTool, Description("Знайти групи за опціональними параметрами: назва, курс та спеціальність")]
+    //[McpServerTool, Description("Знайти групи за опціональними параметрами: назва, курс та спеціальність")]
     public async Task<IEnumerable<Group>> GetGroupsFiltered(string? name = null, int? course = null, string? specialty = null)
     {
         var query = _ctx.Groups.AsQueryable();
@@ -84,8 +86,14 @@ public class GroupsTools
         return await query.ToListAsync();
     }
 
-    [McpServerTool, Description("Знайти групи за курсом")]
-    public async Task<GroupResult> GetGroupsByCourse(int course)
+    // [McpServerTool, Description("Знайти групи за курсом")]
+    [McpServerTool, Description(
+        "Retrieves all groups for a specific course number. " +
+        "Parameters: " +
+        "- course (int): the course number (1–4). " +
+        "Returns GroupResult.Success=false if the course is invalid or no groups found; otherwise returns Success=true and Groups list.")]
+    public async Task<GroupResult> GetGroupsByCourse(
+        [Description("Course number (1–4)")] int course)
     {
         if (course <= 0)
         {
@@ -103,8 +111,15 @@ public class GroupsTools
         return new GroupResult { Success = true, Groups = groups };
     }
 
-    [McpServerTool, Description("Знайти групи за спеціальністю")]
-    public async Task<GroupResult> GetGroupsBySpecialty(string specialty)
+    // [McpServerTool, Description("Знайти групи за спеціальністю")]
+    // public async Task<GroupResult> GetGroupsBySpecialty(string specialty)
+    [McpServerTool, Description(
+        "Retrieves all groups for a given specialty. " +
+        "Parameters: " +
+        "- specialty (string): exact specialty name (e.g. 'Інформатика'). " +
+        "Returns GroupResult.Success=false if input is empty or no matches; otherwise returns Success=true and Groups list.")]
+    public async Task<GroupResult> GetGroupsBySpecialty(
+        [Description("Specialty name")] string specialty)
     {
         if (string.IsNullOrWhiteSpace(specialty))
         {
@@ -124,14 +139,21 @@ public class GroupsTools
         return new GroupResult { Success = true, Groups = groups };
     }
 
-    [McpServerTool, Description(@"
-    Пошук груп за точною назвою. 
-    • Повертає перелік груп у властивості 'Groups' або помилку, якщо нічого не знайдено.
-    • Може використовуватися як самостійна tool для пошуку.
-    • Може використовуватися як перший крок у процесі видалення групи (перед викликом prompt ConfirmDeleteGroup)
-    • ВАЖЛИВО в процесах оновлення чи видалення (UpdateGroup, DeleteGroup) цей метод викликається всередині tools, тому зовнішній виклик перед ними не потрібен.")]
+    // [McpServerTool, Description(@"
+    // Пошук груп за точною назвою. 
+    // • Повертає перелік груп у властивості 'Groups' або помилку, якщо нічого не знайдено.
+    // • Може використовуватися як самостійна tool для пошуку.
+    // • Може використовуватися як перший крок у процесі видалення групи (перед викликом prompt ConfirmDeleteGroup)
+    // • ВАЖЛИВО в процесах оновлення чи видалення (UpdateGroup, DeleteGroup) цей метод викликається всередині tools, тому зовнішній виклик перед ними не потрібен.")]
+    // public async Task<GroupResult> GetGroupsByName(
+    // [Description("Назва групи для пошуку")] string name)
+    [McpServerTool, Description(
+        "Searches for groups by exact or partial name match. " +
+        "Parameters: " +
+        "- name (string): substring of the group name to search for. " +
+        "Returns GroupResult with Groups list if found; otherwise Success=false with a message.")]
     public async Task<GroupResult> GetGroupsByName(
-    [Description("Назва групи для пошуку")] string name)
+        [Description("Name or substring of the group to find")] string name)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -152,16 +174,20 @@ public class GroupsTools
     }
 
     [McpServerTool, Description(@"
-    Створює нову групу з вказаними параметрами: 'name', 'course', 'specialty'. 
-    Перевіряє:
-    • унікальність назви,
-    • діапазон курсу (1–4),
-    • спеціальність зі списку: Прикладна математика, Системний аналіз, Інформатика, Програмна інженерія.
-    У разі помилки повертає зрозуміле повідомлення з переліком допустимих значень; у разі успіху — створений об’єкт Group.")]
+    Creates a new student group with specified parameters: 'name', 'course', 'specialty'.
+    Validates:
+    • name uniqueness within the database,
+    • course range (1-4),
+    • specialty from the allowed list: Прикладна математика, Системний аналіз, Інформатика, Програмна інженерія.
+    Returns detailed error messages with guidance in case of validation failures; on success returns the created Group object.
+    
+    Context for LLM:
+    - This tool creates university student groups that will be used in schedule management
+    - Proper validation is critical to maintain data consistency")]
     public async Task<GroupResult> CreateGroup(
-        [Description("Унікальна назва групи")] string name,
-        [Description("Номер курсу (1–4)")] byte course,
-        [Description("Спеціальність (Обов’язково одна з: Прикладна математика, Системний аналіз, Інформатика, Програмна інженерія)")] 
+        [Description("Unique group name (e.g. 'К-10', 'МІ-31')")] string name,
+        [Description("Course number (1-4)")] byte course,
+        [Description("Specialty (must be one of the allowed values: Прикладна математика, Системний аналіз, Інформатика, Програмна інженерія)")] 
         string specialty)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -198,22 +224,24 @@ public class GroupsTools
 
     [McpServerTool,
     Description(@"
-    Оновлює дані групи. ВАЖЛИВО без необхідності попереднього виклику GetGroupsByName клієнтом.
-    • Інструмент знаходить цільову групу за вказаною 'currentName'.
-    • Перевіряє кожне опціональне поле (newName, course, specialty) з чіткими, контекстуальними повідомленнями про помилки.
-    • Якщо 'specialty' є неіснуючою, повертає повний список дозволених спеціальностей для орієнтації користувача.
-    Контекст для LLM:
-    - Частина робочого процесу управління групами: знайти → перевірити → зберегти.
-    - Забезпечує унікальність імен (без дублікатів), курс у межах [1–4] та спеціальність із дозволеного набору.
-    - Запобігає випадковій втраті даних, застосовуючи суворі перевірки перед збереженням змін.")]
+    Updates a group's information. IMPORTANT: Does not require prior GetGroupsByName call by the client.
+    • The tool finds the target group using the provided 'currentName'.
+    • Validates each optional field (newName, course, specialty) with clear, contextual error messages.
+    • If 'specialty' is invalid, returns the complete list of allowed specialties to guide the user.
+    
+    Context for LLM:
+    - Part of the group management workflow: find → validate → save.
+    - Ensures name uniqueness (no duplicates), course within range [1-4], and specialty from the approved set.
+    - All changes are optional - only provided fields will be updated.
+    - Returns detailed feedback on the success or failure of the operation.")]
     public async Task<GroupResult> UpdateGroup(
-        [Description("Точна поточна назва групи для оновлення")] string currentName,
-        [Description("Опціональна нова назва (має бути унікальною)")] string? newName = null,
-        [Description("Опціональний новий номер курсу (1–4)")] byte course = 0,
-        [Description(@"Опціональна нова спеціальність.
-    Якщо недійсна, помилка вкаже всі допустимі варіанти: 
+        [Description("Exact current name of the group to update")] string currentName,
+        [Description("Optional new name (must be unique)")] string newName = "",
+        [Description("Optional new course number (1-4)")] byte course = 0,
+        [Description(@"Optional new specialty.
+    If invalid, error will indicate all valid options:
     " + "\"Прикладна математика\", \"Системний аналіз\", \"Інформатика\", \"Програмна інженерія\"")] 
-        string? specialty = null)
+        string specialty = "")
     {
         // Знаходимо групи за назвою
         var groups = await GetGroupsFiltered(name: currentName);
@@ -281,10 +309,22 @@ public class GroupsTools
         };
     }
 
-    [McpServerTool, Description("Видалити групу за ID. ВАЖЛИВО: Перед викликом цього інструменту потрібно: 1) Знайти групу за допомогою GetGroupsByName; 2) Отримати підтвердження через промпт ConfirmDeleteGroup; 3) Тільки після підтвердження виконати цей виклик з ID групи")]
+    [McpServerTool, Description(@"
+        Deletes a group from the system by their unique ID. This tool should be used with caution and only after confirmation.
+        This tool works with the ConfirmDeleteGroup prompt, which handles proper verification before deletion.
+
+        Parameters:
+        - groupId: The unique numerical ID of the group to delete
+        - confirmationToken: Must be 'yes' to proceed with deletion
+        Returns:
+        - Success/failure status and descriptive message about the outcome")]
     public async Task<GroupResult> DeleteGroup(
-        [Description("ID групи для видалення")] int groupId)
+        [Description("ID groups for deleting")] int groupId,
+        [Description("Confirmation string. Must be 'yes' to proceed")] string confirmationToken)
     {
+        if (confirmationToken != "yes")
+            return new GroupResult { Success = false, Message = "Підтвердження видалення не отримано. Операцію скасовано." };
+            
         if (groupId <= 0)
             return new GroupResult { Success = false, Message = "Невірний ID групи." };
 

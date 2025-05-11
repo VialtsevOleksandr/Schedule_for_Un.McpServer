@@ -10,18 +10,23 @@ using Microsoft.Extensions.Logging;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-// Забираємо всі стандартні провайдери логів
-builder.Logging.ClearProviders();
+// // Забираємо всі стандартні провайдери логів
+// builder.Logging.ClearProviders();
 
-// Додаємо провайдери логів
-builder.Logging
-       .AddConsole(opts => 
-           opts.LogToStandardErrorThreshold = LogLevel.Error)
-       .SetMinimumLevel(LogLevel.Error);
+// // Додаємо провайдери логів
+// builder.Logging
+//        .AddConsole(opts => 
+//            opts.LogToStandardErrorThreshold = LogLevel.Error)
+//        .SetMinimumLevel(LogLevel.Error);
 
-// Логи для ModelContextProtocol
-builder.Logging.AddFilter("ModelContextProtocol", LogLevel.Warning);
-builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
+// // Логи для ModelContextProtocol
+// builder.Logging.AddFilter("ModelContextProtocol", LogLevel.Warning);
+// builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
+
+builder.Logging.AddConsole(options => {
+options.LogToStandardErrorThreshold = LogLevel.Trace;
+});
+
 
 builder.Services.AddDbContext<ScheduleAPIContext>(opts =>
     opts.UseSqlServer(
