@@ -52,8 +52,20 @@ public class ScheduleTools
         _lessonsTools = lessonsTools;
     }
 
-    [McpServerTool, Description("Зроби розклад для групи у форматі CSV для Google Calendar")]
-    public async Task<string> GetScheduleForGoogleCalendar(string groupName, string? startDate = null)
+    [McpServerTool, Description(@"
+    Exports a student group's weekly schedule as a CSV string ready for Google Calendar import.
+    Simply supply:
+    - groupName (string): the exact name of the group
+    - startDate (string, optional): any date (YYYY-MM-DD) within the desired week (defaults to today)
+
+    Returns either:
+    • A CSV-formatted string of all lessons that week, or  
+    • An error message (e.g. 'Group not found' or 'Invalid date format').
+    ")]
+    public async Task<string> GetScheduleForGoogleCalendarByGroup(
+        [Description("Name of the group")] string groupName,
+        [Description("Optional start date in 'YYYY-MM-DD' format; defaults to today")] string? startDate = null
+    )
     {
         if (string.IsNullOrWhiteSpace(groupName))
             return "Назва групи не може бути порожньою";
@@ -115,14 +127,30 @@ public class ScheduleTools
     }
 
 
-    [McpServerTool, Description("Перевір чи поточний тиждень парний")]
+    [McpServerTool, Description(@"
+    Determines whether the current calendar week is even or odd, based on the institution's alternating-week academic schedule.
+    Use this tool when you need to display or make decisions according to the parity of the current week (e.g., selecting which set of lessons to show).
+    No input parameters are required.
+    Returns:
+    - A human-readable message: 'It is an even week.' or 'It is an odd week.'")]
     public string CheckCurrentWeek()
     {
         bool isEven = IsEvenWeek(DateTime.Now);
         return isEven ? "Зараз парний тиждень" : "Зараз непарний тиждень";
     }
     
-    [McpServerTool, Description("Перевір чи буде парним тиждень за вказаною датою")]
+    [McpServerTool, Description(@"
+    Determines whether the week containing a specified date is even or odd, according to the alternating-week academic schedule.
+    Use this tool when you need to check week parity for planning or querying in advance (for example, when displaying a schedule for a future date).
+    Validation:
+    • The input must be a non-empty string in ISO format (YYYY-MM-DD).
+    • If the date cannot be parsed, an error message is returned.
+    Parameters:
+    - date (string): The date to check, in 'YYYY-MM-DD' format.
+    Returns:
+    - On success: 'The week containing {date} is even.' or 'The week containing {date} is odd.'
+    - On error: descriptive message about the invalid or missing date.
+    ")]
     public string CheckWeekByDate(string date)
     {
         if (string.IsNullOrWhiteSpace(date))
@@ -143,8 +171,19 @@ public class ScheduleTools
         }
     }
     
-    [McpServerTool, Description("Зроби розклад для викладача у форматі CSV для Google Calendar")]
-    public async Task<string> GetScheduleForGoogleCalendarByTeacher(string teacherName, string? startDate = null)
+    [McpServerTool, Description(@"
+    Exports a teacher's weekly timetable as a CSV string, ready for import into Google Calendar.
+    Simply provide:
+    - teacherName (string): the exact full name of the instructor
+    - startDate   (string, optional): any date in 'YYYY-MM-DD' format within the target week (defaults to today)
+    Returns:
+    - A CSV-formatted string of all lessons for that week, or  
+    - An error message if the teacher is not found, the date is invalid, or no lessons exist.
+    ")]
+    public async Task<string> GetScheduleForGoogleCalendarByTeacher(
+        [Description("Name of the teacher")] string teacherName,
+        [Description("Optional start date in 'YYYY-MM-DD' format; defaults to today")] string? startDate = null
+    )
     {
         if (string.IsNullOrWhiteSpace(teacherName))
             return "Назва викладача не може бути порожньою";

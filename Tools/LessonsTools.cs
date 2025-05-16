@@ -685,4 +685,89 @@ public class LessonsTools
             throw;
         }
     }
+
+    [McpServerTool, Description(@"
+    Deletes lessons in bulk, optionally filtered by student course and/or day of week.
+    Use this tool to remove multiple lessons at once:
+    • course=0 & day=0 → deletes all lessons  
+    • course>0 & day=0 → deletes all lessons for that course  
+    • course=0 & day>0 → deletes all lessons on that day  
+    • course>0 & day>0 → deletes all lessons for that course on that day  
+    Validation:
+    • course must be between 1 and 4, or 0 to ignore  
+    • day must be between 1 (Monday) and 5 (Friday), or 0 to ignore  
+    Behavior:
+    • frees any occupied FreeHour slots for the affected lessons teachers  
+    • removes all TeacherLesson and GroupLesson links  
+    • deletes the Lesson records  
+    Returns:
+    - Success=true with DeletedCount on success  
+    - Success=false with an explanatory Message if no lessons found or inputs invalid
+    ")]
+    public async Task<LessonResult> DeleteLessons(
+        [Description("Student course (1–4), or 0 to ignore")] int course = 0,
+        [Description("Day of week (1–5), or 0 to ignore")]    int day    = 0
+    )
+    {
+        if (course < 0 || course > 4)
+            return new LessonResult {
+                Success = false,
+                Message = $"Invalid course: {course}. Must be 1–4 or 0."
+            };
+        if (day < 0 || day > 5)
+            return new LessonResult {
+                Success = false,
+                Message = $"Invalid day: {day}. Must be 1–5 or 0."
+            };
+
+        // 1. Build the query using existing helpers
+        var q = QueryWithIncludes();
+        q = ApplyCourseFilter(q, course);
+        q = ApplyDayPairFilter(q, day, 0);
+
+        // 2. Fetch matching lessons
+        var lessons = await q.ToListAsync();
+        if (!lessons.Any())
+            return new LessonResult {
+                Success = false,
+                Message = "No lessons found matching the specified filters."
+            };
+
+        var lessonIds = lessons.Select(l => l.Id).ToList();
+
+        using var tx = await _ctx.Database.BeginTransactionAsync();
+        try
+        {
+            // 3. Free up any occupied FreeHour slots
+            var slots = await _ctx.FreeHours
+                .Where(fh => fh.LessonId.HasValue && lessonIds.Contains(fh.LessonId.Value))
+                .ToListAsync();
+            slots.ForEach(fh => { fh.IsFree = true; fh.LessonId = null; });
+            await _ctx.SaveChangesAsync();
+
+            // 4. Remove all TeacherLesson & GroupLesson links
+            _ctx.TeacherLessons.RemoveRange(
+                _ctx.TeacherLessons.Where(tl => lessonIds.Contains(tl.LessonId))
+            );
+            _ctx.GroupLessons.RemoveRange(
+                _ctx.GroupLessons.Where(gl => lessonIds.Contains(gl.LessonId))
+            );
+            await _ctx.SaveChangesAsync();
+
+            // 5. Delete the Lesson records
+            _ctx.Lessons.RemoveRange(lessons);
+            await _ctx.SaveChangesAsync();
+
+            await tx.CommitAsync();
+            return new LessonResult {
+                Success = true,
+                Message = $"{lessons.Count} lesson(s) deleted."
+            };
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
+    }
 }
